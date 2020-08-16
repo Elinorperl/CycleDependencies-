@@ -1,332 +1,288 @@
-/**
- * @file CheckParenthesis.c
- * @version 1.0
- * @date 7.8.16
- *
- * @brief Program to check the structure of the parenthesis of an input file
- *
- * @section LICENSE
- * This program is not a free software;
- *
- * @section DESCRIPTION
- * The system checks the structure of the parenthesis of the file.
- * Input  : A file to check.
- * Process: Intilaizing an array and a pointer ("stack"), reads the file and add the open
- * parenthesis, removes the close parenthesis. In the end of the file (or when a problem is
- * found) prints a message to the user about the state of the file.
- * Output : Notification.
- */
+	/**
+	* @file CheckDependency.c
+	* @author Elinor Perl <elinor.perl@mail.huji.ac.il>
+	* @version 1.0
+	* @date August 24, 2016
+	*
+	* @brief A system that checks file dependency.
+	*
+	* @section LICENSE
+	* This program is brought to you by Hebrew University - Course C. :)
+	*
+	* @section DESCRIPTION
+	* This program converts a number from one base to another.
+    Input : Input is the file to be checked for cyclic dependency
+	* Process: The file is parsed according to file and it’s dependency - then using the DFS algorithm checks dependency.
+	* Output : The program’s output refers to whether the file input is cyclic or not.
+	*/
 
-// ------------------------------ includes ------------------------------
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <assert.h>
-
-// -------------------------- const definitions -------------------------
-
-/**
- * @def FILE_PROCESSED_SUCCESSFULLY 0
- * @brief A macro that presents the output of the main function when there weren't any problems
- * with the file.
- */
-#define FILE_PROCESSED_SUCCESSFULLY 0
-
-/**
- * @def ERROR -1
- * @brief A macro that presents an error notification.
- */
-#define ERROR -1
-
-/**
- * @def ERROR_OPENING_FILE_MESSAGE "Error! trying to open the file %s\n"
- * @brief A macro that presents the output when the program isn't able to read the file.
- */
-#define ERROR_OPENING_FILE_MESSAGE "Error! trying to open the file %s\n"
-
-/**
- * @def ERROR_WRONG_NUMBER_OF_INPUTS "Please supply a file! usage: CheckDependency <filename>\n"
- * @brief A macro that presents the output when there are more/less argument in the arguments'
- * array.
- */
-#define ERROR_WRONG_NUMBER_OF_INPUTS "Please supply a file! usage: CheckDependency <filename>\n"
-
-/**
- * @def FILE_INPUT 1
- * @brief A macro that presents the index of the file path in the arguments' array.
- */
-#define FILE_INPUT 1
-
-/**
- * @def CORRECT_NUM_OF_ARGUMENTS 2
- * @brief A macro that presents the number of the arguments that the user supposes to insert.
- */
-#define CORRECT_NUM_OF_ARGUMENTS 2
+	// 	includes  	
+	#include<stdio.h>
+	#include<string.h>
+	#include<stdlib.h>
+	#include<assert.h>
 
 
+	// 	const definitions  	
+	/**
+	* @def LINESIZE 1001
+	* @brief the size for one line
+	*/
+	#define LINESIZE 1001
+	/**
+	* @def VALID 0
+	* @brief valid output
+	*/
+	#define VALID 0
+	/**
+	* @def INVALID 1
+	* @brief invalid output
+	*/
+	#define INVALID 1
+	/**
+	* @def END_OF_LINE ’\0’
+	* @brief signifies the end of a line
+	*/
+	#define END_OF_LINE ’\0’
+	/**
+	* @def ENTER ", \n"
+	* @brief signifies a new line
+	*/
+	#define ENTER ", \n"
+	/**
+	* @def COLON ":"
+	* @brief a colon which parses the file from its dependencies
+	*/
+	#define COLON ":"
+	/**
+	* @def VALID_FILE_AMOUNT 2
+	* @brief the amount of arguments expected in order to continue with the program
 
-/**
- * @def MAX_LENGTH_NAME 256
- * @brief A macro that presents the number of the arguments that the user supposes to insert.
- */
-#define MAX_LENGTH_NAME 256
 
-/**
- * @def MAX_NUM_OF_NEIGHBORS 100
- * @brief A macro that presents the number of the arguments that the user supposes to insert.
- */
-#define MAX_NUM_OF_NEIGHBORS 100
+	*/
+	#define VALID_FILE_AMOUNT 2
+	/**
+	* @def CYCLE_DETECTED "Cyclic Dependency\n"
+	* @brief indicates when file cycle has been detected
+	*/
+    #define CYCLE_DETECTED "Cyclic Dependency\n"
+	/**
+	* @def NO_CYCLE_DETECTED "No cyclic dependency\n"
+	* @brief indicates when no file cycle has been detected
+	*/
+	#define NO_CYCLE_DETECTED "No cyclic dependency\n"
+	/**
+	* @def FILE_ERROR "Error trying to open file!"
+	* @brief the string to be printed when an invalid amount of arguments have been input.
+	*/
+	#define FILE_ERROR "Error trying to open file!"
+	/**
+	* @def LENGTH_OF_FILE_NAME 256
+	* @brief The maximum length a file name can be
+	*/
+	#define LENGTH_OF_FILE_NAME 256
+	/**
+	* @def AMOUNT_OF_NEIGHBORS 100
+	* @brief The maximum amount of neighbors for a dependent file
+	*/
+	#define AMOUNT_OF_NEIGHBORS 100
+	/**
+	* @def AMOUNT_OF_DEPENDENCIES 1000
+	* @brief The maximum amount of dependencies
+	*/
+	#define AMOUNT_OF_DEPENDENCIES 1000
 
-/**
- * @def MAX_NUM_OF_GRAPH_FILES 1000
- * @brief A macro that presents the number of the arguments that the user supposes to insert.
- */
-#define MAX_NUM_OF_GRAPH_FILES 1000
+	// 	functions  	
 
-/**
- * @def MAX_LENGTH_OF_LINE 1001
- * @brief A macro that presents the number of the arguments that the user supposes to insert.
- */
-#define MAX_LENGTH_OF_LINE 1001
+	/**
+	* An enum called marker - it defines the marker for the DFS algorithm.
+	*/
+	enumMarker
+	{
+	WHITE,
+	GRAY,
+	BLACK
+	};
 
-/**
- * @def NAMES_PATTERN_IN_THE_FILE ": , \n"
- * @brief A macro that presents the number of the arguments that the user supposes to insert.
- */
-#define NAMES_PATTERN_IN_THE_FILE ": ,\n"
+	/**
+	* Dependent File struct - defines out the dependent file should look and act with an array of dependent files
+	* regarding their neighbors (possible dependencies).
+	*/
+	typedefstruct DependentFile
+	{
+	char_fileName[LENGTH_OF_FILE_NAME];
+	structDependentFile*_fileNeighbors[AMOUNT_OF_NEIGHBORS];
+	intfileIndex;
+	enumMarker marker;
+	intnumberOfDependencies;
 
-/**
- * @def NO_CYCLIC_MESSAGE "No Cyclic dependency\n"
- * @brief A macro that presents the number of the arguments that the user supposes to insert.
- */
-#define NO_CYCLIC_MESSAGE "No Cyclic dependency\n"
+	} DependentFile;
+	DependentFile dependencies[AMOUNT_OF_DEPENDENCIES];
+	intfileAmount;
 
-/**
- * @def CYCLIC_MESSAGE "Cyclic dependency\n"
- * @brief A macro that presents the number of the arguments that the user supposes to insert.
- */
-#define CYCLIC_MESSAGE "Cyclic dependency\n"
 
-#define DEBUG
+	/**
+	* @brief gets the desired file.
+	* @param name the name of the file for which we’d like to return
+	* @return returns the specific file if it should exist - otherwise NULL.
+	*/
+	DependentFile*getFile(char*name)
 
-/**
- * @brief
- */
-typedef enum
-{
-    WHITE,
-    GREY,
-    BLACK
-} Group;
 
-/**
- * @brief
- */
-typedef struct _DependentFile
-{
-    int _indexFile;
-    char _name[MAX_LENGTH_NAME];
-    struct _DependentFile* _fileNeighbors[MAX_NUM_OF_NEIGHBORS];
-    char** _neighborsNames;
-    int _numOfNeighbors;
-    Group _group;
-} _DependentFile;
+	{
+	for(intindex=0; index<fileAmount; index++)
+	{
+    if(strcmp(dependencies[index]._fileName, name)==0)
+	{
+ 	return &dependencies[index];
+	}
+	}
+	return NULL;
+	}
 
-/**
- *
- */
-_DependentFile dependencies[MAX_NUM_OF_GRAPH_FILES];
+	/**
+	* @brief removes the ’\n’ from a given line.
+	* @param line the line to change.
+	*/
+	voidremoveEnter(char*line)
+	{
+	line[strlen(line)-1]=END_OF_LINE;
+	}
 
-/**
- *
- */
-int numOfFiles;
+	voidinitializeFile(DependentFile file)
+	{
+	file.marker=WHITE;
+	file.numberOfDependencies=0;
+	file.fileIndex=fileAmount;
+	dependencies[fileAmount]=file;
+	}
 
-// ------------------------------ functions -----------------------------
+	/**
+	* @brief reads and processes the file, initializing it and adding it to the dependencies’ array
+	* @param file the file to process
+	*/
+	voidreadFile(FILE*file)
+	{
+	charline[LINESIZE];
+	fileAmount=0;
+	while(fgets(line, LINESIZE, file))
+	{
+	removeEnter(line);
+	char*pointer=strtok(line, COLON);
+	if(!pointer)
+	{
+	continue;
+	}
+	DependentFile*pointerFile=getFile(pointer);
+	if(pointerFile==NULL)
+	{
+	initializeFile(dependencies[fileAmount]);
+	strcpy(dependencies[fileAmount]._fileName, pointer);
+	fileAmount++;
+	}
+	}
+	rewind(file);
+	}
 
-/**
- * @brief
- * @param name
- * RETURN VALUE:
- *  @return
- */
-static _DependentFile* getFile(const char* name)
-{
-    int i = 0;
-    for (i = 0; i < numOfFiles; i++)
-    {
-        if (strcmp(dependencies[i]._name, name) == 0)
-        {
-            return &(dependencies[i]);
-        }
-    }
-    return NULL;
-}
+	/**
+	* @brief checks and process the dependencies for each file and adds them to the the relevant neighbor array.
+	* @param file the file to be checked
+	*/
+	voidcheckDependencies(FILE*file)
+	{
+	charline[LINESIZE];
+	char*currentFile;
+	char*curDep;
+	DependentFile*d;
+	DependentFile*neighbor;
+	while(fgets(line,sizeof(line), file))
+	{
 
-/**
- * @brief
- * RETURN VALUE:
- *  @return
- */
-static _DependentFile initializeFile()
-{
-    _DependentFile currentFile;
-    currentFile._numOfNeighbors = 0;
-    currentFile._group = WHITE;
-    currentFile._neighborsNames = (char**)malloc(MAX_NUM_OF_NEIGHBORS*sizeof(char*));
-    currentFile._indexFile = numOfFiles;
-    return currentFile;
-}
 
-/**
- * @brief
- * @param pLine
- * @param indexFile
- */
-static void addingNameOfNeighbor(char* pLine, int indexFile)
-{
-    pLine = strtok(NULL, NAMES_PATTERN_IN_THE_FILE);
-    while (pLine != NULL)
-    {
-        dependencies[indexFile]._neighborsNames[dependencies[indexFile]._numOfNeighbors] =
-                (char*)malloc(MAX_LENGTH_NAME * sizeof(char));
-        strcpy(dependencies[indexFile]._neighborsNames[dependencies[indexFile]._numOfNeighbors],
-               pLine);
-        dependencies[indexFile]._numOfNeighbors++;
-        pLine = strtok(NULL, NAMES_PATTERN_IN_THE_FILE);
-    }
-}
+	currentFile=strtok(line, COLON);
+	if(!getFile(currentFile))
+	{
+	continue;
+	}
+	d=getFile(currentFile);
+	curDep=strtok(NULL, ENTER);
+	while(curDep)
+	{
+	neighbor=getFile(curDep);
+	if(neighbor)
+	{
+	(*d)._fileNeighbors[(*d).numberOfDependencies]=neighbor;
+	(*d).numberOfDependencies++;
+	}
+	curDep=strtok(NULL, ENTER);
+	}
+	}
+	}
 
-/**
- * @brief
- * @param file
- */
-static void processFile(FILE * file)
-{
-    numOfFiles = 0;
-    char line[MAX_LENGTH_OF_LINE];
-    while (fgets(line, sizeof(line), file) != NULL)
-    {
-        char *p = NULL;
-        p = strtok(line, NAMES_PATTERN_IN_THE_FILE);
-        _DependentFile *pNewFile = getFile(p);
-        if (pNewFile == NULL)
-        {
-            _DependentFile currentFile = initializeFile();
-            strcpy(currentFile._name, p);
-            dependencies[numOfFiles] = currentFile;
-            addingNameOfNeighbor(p, currentFile._indexFile);
-            numOfFiles++;
-        }
-        else
-        {
-            addingNameOfNeighbor(p, (*pNewFile)._indexFile);
-        }
-    }
-}
+	/**
+	* @brief the DFS algorithm - that determines the cycles by marking the files we’ve already visited.
+	* @param filePosition the index of the file we are checking.
+	*/
+	voiddfsHelper(intfilePosition)
+	{
+	dependencies[filePosition].marker=GRAY;
+	for(inti=0; i<dependencies[filePosition].numberOfDependencies; i++)
+	{
+	DependentFile dependency=*(dependencies[filePosition]._fileNeighbors[i]);
+	if(dependency.marker==GRAY)
+	{
+	printf (CYCLE_DETECTED);
+	exit(VALID);
+	}
+	if(dependency.marker==WHITE)
+	{
+	dfsHelper((*dependencies[filePosition]._fileNeighbors[i]).fileIndex);
+	}
+	}
+	dependencies[filePosition].marker=BLACK;
 
-/**
- * @brief returns a pointer to the file from the list
- */
-static void buildGraph()
-{
-    int indexFile = 0;
-    for (indexFile = 0; indexFile < numOfFiles; indexFile++)
-    {
-        int indexNeighbor = 0;
-        int currentIndexNeighbor = 0;
-        int numOfNeighbors = dependencies[indexFile]._numOfNeighbors;
-        for(indexNeighbor = 0; indexNeighbor < dependencies[indexFile]._numOfNeighbors;
-            indexNeighbor++)
-        {
-            _DependentFile* neighbor = getFile(dependencies[indexFile]._neighborsNames[indexNeighbor]);
-            free(dependencies[indexFile]._neighborsNames[indexNeighbor]);
-            dependencies[indexFile]._neighborsNames[indexNeighbor] = NULL;
-            if (neighbor == NULL)
-            {
-                numOfNeighbors--;
-            }
-            else
-            {
-                dependencies[indexFile]._fileNeighbors[currentIndexNeighbor] = neighbor;
-                currentIndexNeighbor++;
-            }
-        }
-        dependencies[indexFile]._numOfNeighbors = numOfNeighbors;
-        free(dependencies[indexFile]._neighborsNames);
-        dependencies[indexFile]._neighborsNames = NULL;
-    }
-}
 
-/**
- * @brief
- * @param fileIndex
- */
-static void dfsCheckDependencyHelper(const int fileIndex)
-{
-    dependencies[fileIndex]._group = GREY;
-    int i = 0;
-    for (i = 0; i < dependencies[fileIndex]._numOfNeighbors; i++)
-    {
-        _DependentFile neighbor = *(dependencies[fileIndex]._fileNeighbors)[i];
-        if (neighbor._group == GREY)
-        {
-            printf(CYCLIC_MESSAGE);
-            exit(FILE_PROCESSED_SUCCESSFULLY);
-        }
-        if (neighbor._group == WHITE)
-        {
-            dfsCheckDependencyHelper((*((dependencies[fileIndex])._fileNeighbors)[i])._indexFile);
-        }
-    }
-    dependencies[fileIndex]._group = BLACK;
-}
+	}
+	/**
+* @brief The DFS cycle detector - iterating over each file and sending its position to the DFS algorithm to be checked.
+	*/
+	voiddfsDetectCycles()
+	{
+	for(inti=0; i<fileAmount; i++)
+	{
+	if(dependencies[i].marker==WHITE)
+	{
+	dfsHelper(i);
+	}
+	}
+	}
 
-/**
- * @brief
- */
-static void dfsCheckDependency()
-{
-    int i = 0;
-    for (i = 0; i < numOfFiles; i++)
-    {
-        if (dependencies[i]._group == WHITE)
-        {
-            dfsCheckDependencyHelper(i);
-        }
-    }
-}
+	/**
+	* @brief The main function that runs the program by processing the file and its dependencies and sending it to the DFS
+	* algorithm to be checked for Cyclic dependencies
+	* @param argc the number of arguments given
+	* @param argv the argument - in our case ine argument with the file of files.
+	* @return returns 0 for a valid (that is to say no cyclic dependency), and 1 for invalid - (cyclic dependency).
+	*/
+	int main(intargc,char*argv[])
+	{
+	if(argc!=VALID_FILE_AMOUNT)
 
-/**
- * @brief This program recieves a file and checks if the parenthesis structure is correct or not.
- * @param argc the number of the cmd arguments (including the name of this project)
- * @param argv the array of the cmd arguments, this case the argument is the file path
- * RETURN VALUE:
- *  @return 0 if the file was ok and the program successes process it, otherwise, it returns 1 -
- *  which means there is an error, and it prints an informative massage about the kind of the
- *  problem.
- */
-int main(int argc, char *argv[])
-{
-    if (argc != CORRECT_NUM_OF_ARGUMENTS)
-    {
-        fprintf(stderr, ERROR_WRONG_NUMBER_OF_INPUTS);
-        return ERROR;
-    }
-    FILE *file;
-    file = fopen(argv[FILE_INPUT], "r");
-    if (file)
-    {
-        processFile(file);
-        fclose(file);
-        buildGraph();
-        dfsCheckDependency();
-        printf(NO_CYCLIC_MESSAGE);
-        return FILE_PROCESSED_SUCCESSFULLY;
-    }
-    else
-    {
-        fprintf(stderr, ERROR_OPENING_FILE_MESSAGE, argv[FILE_INPUT]);
-        return ERROR;
-    }
+
+	{
+	fprintf(stderr, FILE_ERROR);
+	exit(1);
+	}
+	FILE*file;
+	file=fopen(argv[1],"r");
+	if(file)
+	{
+	readFile(file);
+	checkDependencies(file);
+	dfsDetectCycles();
+	printf(NO_CYCLE_DETECTED);
+	fclose(file);
+	return VALID;
+	}
+	return INVALID;	
 }
