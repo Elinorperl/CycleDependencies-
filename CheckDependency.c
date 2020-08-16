@@ -1,6 +1,5 @@
 /**
  * @file CheckParenthesis.c
- * @author  Nophar Sarel
  * @version 1.0
  * @date 7.8.16
  *
